@@ -256,45 +256,46 @@ fprintf('Generating plots for HPF...\n');
 [sos, g] = zp2sos(z, p, k);
 Sec3Tasks_2_1(' - Butterworth HPF (π rotation)', sos, 1, b_hpf, a_hpf, f, Fs, N, 600, false);
 
-y_hpf = filter(b_hpf, a_hpf, x_mono);
-MSE_hpf = calc_mse(y_hpf, x_mono);
-Energy_loss_hpf = calc_energylost(x_mono, y_hpf);
-
-
 %% Part B: Transform Butterworth LPF to BPF (rotate by π/2)
 fprintf('\n=== Part B: Bandpass Filter (BPF) centered at π/2 ===\n');
 
-% To create a BPF centered at ω = π/2, we need two rotations:
-% 1. Rotate LPF poles/zeros by +π/2 (multiply by e^(jπ/2) = j)
-% 2. Rotate LPF poles/zeros by -π/2 (multiply by e^(-jπ/2) = -j)
-% This creates a symmetric bandpass response around π/2
+% Manual pole-zero rotation for digital BPF
+z_bpf_pos = z_lpf.*j;
+z_bpf_neg = z_lpf./j;
 
-z_bpf_pos = z_lpf; 
-z_bpf_neg = -z_lpf;  
+p_bpf_pos = p_lpf.*j;     % Rotate by +π/2
+p_bpf_neg = p_lpf./j;     % Rotate by -π/2
 
-p_bpf_pos = p_lpf.*j;
-p_bpf_neg = p_lpf./j;
+% Create two separate filters
+z_bpf_1 = z_bpf_pos ;
+p_bpf_1 = p_bpf_pos ;
+k_bpf_1 = k_lpf;
 
-% Combine both rotations to get bandpass characteristic
-z_bpf = [z_bpf_pos; z_bpf_neg];
-p_bpf = [p_bpf_pos; p_bpf_neg];
-k_bpf = k_lpf;
+z_bpf_2 = z_bpf_neg;
+p_bpf_2 = p_bpf_neg;
+k_bpf_2 = k_lpf;
 
-[b_bpf, a_bpf] = zp2tf(z_bpf, p_bpf, k_bpf);
+b_bpf_1 = k_bpf_1*poly(z_bpf_1);
+a_bpf_1 = poly(p_bpf_1);
+b_bpf_2 = k_bpf_2*poly(z_bpf_2);
+a_bpf_2 = poly(p_bpf_2);
+
+% Parallel combination: H(z) = H1(z) + H2(z)
+% This means: (b1/a1) + (b2/a2) = (b1*a2 + b2*a1) / (a1*a2)
+% Parallel combination: H(z) = H1(z) + H2(z)
+% (b1/a1) + (b2/a2) = (b1*a2 + a1*b2) / (a1*a2)
+b_bpf = conv(b_bpf_1, a_bpf_2) + conv(a_bpf_1, b_bpf_2);
+a_bpf = conv(a_bpf_1, a_bpf_2);
+
 b_bpf = real(b_bpf);
 a_bpf = real(a_bpf);
 
+[z, p, k] = tf2zpk(b_bpf, a_bpf); 
+[sos, g] = zp2sos(z,p,k);
 fprintf('Generating plots for BPF...\n');
-[z, p, k] = tf2zpk(b_bpf, a_bpf);
-[sos, g] = zp2sos(z, p, k);
 Sec3Tasks_2_1(' - Butterworth BPF (π/2 rotation)', sos, 1, b_bpf, a_bpf, f, Fs, N, 600, false);
 
-y_bpf = filter(b_bpf, a_bpf, x_mono);
-MSE_bpf = calc_mse(y_bpf, x_mono);
-Energy_loss_bpf = calc_energylost(x_mono, y_bpf);
-
-
-%% Comparison Plot: LPF vs HPF vs BPF
+%% ----------EXTRAS Comparison Plot: LPF vs HPF vs BPF------------------
 fprintf('\n=== Generating comparison plots ===\n');
 
 figure('Name', 'Task 3: Filter Comparison (LPF, HPF, BPF)', 'Position', [150, 150, 1400, 600]);
