@@ -202,7 +202,7 @@ for i = 1:4
     [sos, g] = zp2sos(z, p, k);
     
     % Generate plots using SOS (Section 3 requirements)
-    Sec3Tasks_2_1([' - ' filter_names{i} ' LPF'], sos, 1, b, a, f, Fs, N, 600, false); %pass num as SOS and den is ignored for second order sections
+    Sec3Tasks_2_1([' - ' filter_names{i} ' LPF'], sos, 1, b, a, f, Fs, N, 600, false, g); %pass num as SOS and den is ignored for second order sections
     
     % apply filter to audio
     y_filtered = filter(b, a, x_mono);
@@ -236,6 +236,7 @@ fprintf('   MSE = %.6e\n\n', min_MSE);
 fprintf('Best filter (minimum energy loss): %s\n', filter_names{idx_loss});
 fprintf('   Energy Loss = %.4f%%\n\n', min_loss);
 
+%%
 %% --------------------- Task 3: Frequency Transformation using Pole-Zero Rotation -----------------
 fprintf('\n=== TASK 3: Frequency Transformation using Pole-Zero Rotation ===\n\n');
 
@@ -254,7 +255,7 @@ k_hpf = k_lpf;
 fprintf('Generating plots for HPF...\n');
 [z, p, k] = tf2zpk(b_hpf, a_hpf);
 [sos, g] = zp2sos(z, p, k);
-Sec3Tasks_2_1(' - Butterworth HPF (π rotation)', sos, 1, b_hpf, a_hpf, f, Fs, N, 600, false);
+Sec3Tasks_2_1(' - Butterworth HPF (π rotation)', sos, 1, b_hpf, a_hpf, f, Fs, N, 600, false, g);
 
 %% Part B: Transform Butterworth LPF to BPF (rotate by π/2)
 fprintf('\n=== Part B: Bandpass Filter (BPF) centered at π/2 ===\n');
@@ -293,20 +294,29 @@ a_bpf = real(a_bpf);
 [z, p, k] = tf2zpk(b_bpf, a_bpf); 
 [sos, g] = zp2sos(z,p,k);
 fprintf('Generating plots for BPF...\n');
-Sec3Tasks_2_1(' - Butterworth BPF (π/2 rotation)', sos, 1, b_bpf, a_bpf, f, Fs, N, 600, false);
+Sec3Tasks_2_1(' - Butterworth BPF (π/2 rotation)', sos, 1, b_bpf, a_bpf, f, Fs, N, 600, false, g);
 
 %% ----------EXTRAS Comparison Plot: LPF vs HPF vs BPF------------------
 fprintf('\n=== Generating comparison plots ===\n');
 
 figure('Name', 'Task 3: Filter Comparison (LPF, HPF, BPF)', 'Position', [150, 150, 1400, 600]);
 
-H_lpf_t3 = freqz(b_butter, a_butter, N, Fs, 'whole');
-H_hpf_t3 = freqz(b_hpf, a_hpf, N, Fs, 'whole');
-H_bpf_t3 = freqz(b_bpf, a_bpf, N, Fs, 'whole');
+[z, p, k] = tf2zpk(b_butter, a_butter); 
+[sos_lpf, g_lpf] = zp2sos(z,p,k);
+
+[z, p, k] = tf2zpk(b_hpf, a_hpf); 
+[sos_hpf, g_hpf] = zp2sos(z,p,k);
+
+[z, p, k] = tf2zpk(b_bpf, a_bpf); 
+[sos_bpf, g_bpf] = zp2sos(z,p,k);
+
+H_lpf_t3 = g_lpf * freqz(sos_lpf, N, Fs, 'whole');
+H_hpf_t3 = g_hpf*freqz(sos_hpf, N, Fs, 'whole');
+H_bpf_t3 = g_bpf*freqz(sos_bpf, N, Fs, 'whole');
 
 H_lpf_shift = fftshift(H_lpf_t3);
 H_hpf_shift = fftshift(H_hpf_t3);
-H_bpf_shift = fftshift(H_bpf_t3)./max(H_bpf_t3);
+H_bpf_shift = fftshift(H_bpf_t3);
 
 subplot(1,2,1);
 hold on;

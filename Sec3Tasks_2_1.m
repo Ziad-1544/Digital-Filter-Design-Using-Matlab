@@ -1,4 +1,4 @@
-function Sec3Tasks_2_1(String_title, num, den, num_zplane, den_zplane, Freq_Vector, F_sampling, N_Samples, imp_len ,show_zoom)
+function Sec3Tasks_2_1(String_title, num, den, num_zplane, den_zplane, Freq_Vector, F_sampling, N_Samples, imp_len ,show_zoom, sosgain)
     % show_zoom: 
     %   - true: shows zoomed plots
     %   - false: shows only full-range plots
@@ -21,7 +21,7 @@ function Sec3Tasks_2_1(String_title, num, den, num_zplane, den_zplane, Freq_Vect
     %%---------------------------------- Compute Frequency Data ----------------------------------
     if size(num, 2) == 6 %detects if num is in SOS format, which is a matrix with 6 columns
         % SOS format - only needs 2 arguments
-        H = freqz(num, N_Samples, 'whole');                  % without whole: 0->fs/2 , with whole 0->fs
+        H = sosgain * freqz(num, N_Samples, F_sampling, 'whole');                  % without whole: 0->fs/2 , with whole 0->fs
     else
         % Normal (b,a) format
         H = freqz(num, den, N_Samples, F_sampling, 'whole'); % without whole: 0->fs/2 , with whole 0->fs
